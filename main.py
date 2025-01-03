@@ -101,11 +101,11 @@ def main():
     oil_history = deque(test_data['Oil_Price'].tail(6).tolist(), maxlen=6)
     rub_history = deque(test_data['USD_RUB'].tail(6).tolist(), maxlen=6)
     
-    # Прогнозируем на следующие 10 часов
+    # Прогнозируем на следующие 24 часа
     forecast = []
     last_data_point = test_data.iloc[-1].copy()
     
-    for _ in range(10):
+    for _ in range(24): 
         # Обновляем лаговые признаки для Gas_Price
         if len(gas_history) >= 1:
             last_data_point['Gas_Price_lag1'] = gas_history[-1]
@@ -144,28 +144,28 @@ def main():
         
         # Обновляем исторические данные
         gas_history.append(pred[0])
-        oil_history.append(oil_history[-1])
-        rub_history.append(rub_history[-1])
+        oil_history.append(oil_history[-1])  
+        rub_history.append(rub_history[-1]) 
         
         # Обновляем Gas_Price для следующей итерации
         last_data_point['Gas_Price'] = pred[0]
     
     # Создаем DataFrame для прогнозируемых цен
-    forecast_index = pd.date_range(start=last_time + pd.Timedelta(hours=1), periods=10, freq='H')
+    forecast_index = pd.date_range(start=last_time + pd.Timedelta(hours=1), periods=24, freq='H')  
     forecast_df = pd.DataFrame(forecast, index=forecast_index, columns=['Predicted_Gas_Price'])
     
     # Строим график исторических и прогнозируемых цен на газ
     plt.figure(figsize=(12, 6))
     plt.plot(data['Gas_Price'], label='Исторические цены на газ')
     plt.plot(forecast_df['Predicted_Gas_Price'], label='Прогнозируемые цены на газ', linestyle='--')
-    plt.title('Прогноз цен на газ на следующие 10 часов')
+    plt.title('Прогноз цен на газ на следующие 24 часа')  # Updated title
     plt.xlabel('Дата')
     plt.ylabel('Цена на газ')
     plt.legend()
     plt.show()
     
     # Выводим прогнозируемые цены
-    print("Прогнозируемые цены на газ на следующие 10 часов:")
+    print("Прогнозируемые цены на газ на следующие 24 часа:")
     print(forecast_df)
 
 if __name__ == "__main__":
