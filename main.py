@@ -20,6 +20,7 @@ def preprocess_data(data):
     data.dropna(inplace=True)
     return data
 
+
 def create_sequences(data, seq_length, target_col):
     sequences, targets = [], []
     for i in range(len(data) - seq_length):
