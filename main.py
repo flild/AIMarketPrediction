@@ -16,33 +16,17 @@ def fetch_gas_prices():
         logging.error("No gas price data fetched.")
     return gas_prices
 
-def fetch_oil_prices():
-    oil_prices = yf.download("CL=F", period="1mo", interval="1h")[['Close']]
-    oil_prices.rename(columns={'Close': 'Oil_Price'}, inplace=True)
-    oil_prices.columns = ['Oil_Price']
-    if oil_prices.empty:
-        logging.error("No oil price data fetched.")
-    return oil_prices
-
-def fetch_currency_rates():
-    currency_rates = yf.download("RUB=X", period="1mo", interval="1h")[['Close']]
-    currency_rates.rename(columns={'Close': 'USD_RUB'}, inplace=True)
-    currency_rates.columns = ['USD_RUB']
-    if currency_rates.empty:
-        logging.error("No currency rate data fetched.")
-    return currency_rates
-
 def add_lag_features(data, columns, lags):
     for col in columns:
         for lag in lags:
             data[f"{col}_lag{lag}"] = data[col].shift(lag)
     return data
 
-def preprocess_data(gas_prices, oil_prices, currency_rates):
-    data = gas_prices.join(oil_prices, how='outer').join(currency_rates, how='outer')
+def preprocess_data(gas_prices):
+    data = gas_prices.copy()
     data.fillna(method='ffill', inplace=True)
     data.dropna(inplace=True)
-    lag_columns = ['Gas_Price', 'Oil_Price', 'USD_RUB']
+    lag_columns = ['Gas_Price']
     data = add_lag_features(data, lag_columns, lags=[1, 3, 6])
     data['hour'] = data.index.hour
     data['day_of_week'] = data.index.dayofweek
@@ -50,13 +34,11 @@ def preprocess_data(gas_prices, oil_prices, currency_rates):
     return data
 
 def main():
-    # Получаем данные о ценах на газ, нефть и курсы валют
+    # Получаем данные о ценах на газ
     gas_prices = fetch_gas_prices()
-    oil_prices = fetch_oil_prices()
-    currency_rates = fetch_currency_rates()
     
     # Предобрабатываем данные
-    data = preprocess_data(gas_prices, oil_prices, currency_rates)
+    data = preprocess_data(gas_prices)
     print("Размер предобработанных данных:", data.shape)
     
     # Определяем признаки и целевую переменную
@@ -98,8 +80,6 @@ def main():
     
     # Инициализируем исторические данные для лаговых признаков
     gas_history = deque(test_data['Gas_Price'].tail(6).tolist(), maxlen=6)
-    oil_history = deque(test_data['Oil_Price'].tail(6).tolist(), maxlen=6)
-    rub_history = deque(test_data['USD_RUB'].tail(6).tolist(), maxlen=6)
     
     # Прогнозируем на следующие 24 часа
     forecast = []
@@ -107,28 +87,9 @@ def main():
     
     for _ in range(24): 
         # Обновляем лаговые признаки для Gas_Price
-        if len(gas_history) >= 1:
-            last_data_point['Gas_Price_lag1'] = gas_history[-1]
-        if len(gas_history) >= 3:
-            last_data_point['Gas_Price_lag3'] = gas_history[-3]
-        if len(gas_history) >= 6:
-            last_data_point['Gas_Price_lag6'] = gas_history[-6]
-        
-        # Обновляем лаговые признаки для Oil_Price
-        if len(oil_history) >= 1:
-            last_data_point['Oil_Price_lag1'] = oil_history[-1]
-        if len(oil_history) >= 3:
-            last_data_point['Oil_Price_lag3'] = oil_history[-3]
-        if len(oil_history) >= 6:
-            last_data_point['Oil_Price_lag6'] = oil_history[-6]
-        
-        # Обновляем лаговые признаки для USD_RUB
-        if len(rub_history) >= 1:
-            last_data_point['USD_RUB_lag1'] = rub_history[-1]
-        if len(rub_history) >= 3:
-            last_data_point['USD_RUB_lag3'] = rub_history[-3]
-        if len(rub_history) >= 6:
-            last_data_point['USD_RUB_lag6'] = rub_history[-6]
+        last_data_point['Gas_Price_lag1'] = gas_history[-1] if len(gas_history) >= 1 else np.nan
+        last_data_point['Gas_Price_lag3'] = gas_history[-3] if len(gas_history) >= 3 else np.nan
+        last_data_point['Gas_Price_lag6'] = gas_history[-6] if len(gas_history) >= 6 else np.nan
         
         # Обновляем временные признаки
         last_time = last_data_point.name
@@ -144,8 +105,6 @@ def main():
         
         # Обновляем исторические данные
         gas_history.append(pred[0])
-        oil_history.append(oil_history[-1])  
-        rub_history.append(rub_history[-1]) 
         
         # Обновляем Gas_Price для следующей итерации
         last_data_point['Gas_Price'] = pred[0]
@@ -154,11 +113,14 @@ def main():
     forecast_index = pd.date_range(start=last_time + pd.Timedelta(hours=1), periods=24, freq='H')  
     forecast_df = pd.DataFrame(forecast, index=forecast_index, columns=['Predicted_Gas_Price'])
     
+    # Фильтруем данные для графика за последнюю неделю
+    last_week_data = data[data.index >= data.index[-1] - pd.Timedelta(days=7)]
+    
     # Строим график исторических и прогнозируемых цен на газ
     plt.figure(figsize=(12, 6))
-    plt.plot(data['Gas_Price'], label='Исторические цены на газ')
+    plt.plot(last_week_data['Gas_Price'], label='Исторические цены на газ (последняя неделя)')
     plt.plot(forecast_df['Predicted_Gas_Price'], label='Прогнозируемые цены на газ', linestyle='--')
-    plt.title('Прогноз цен на газ на следующие 24 часа')  # Updated title
+    plt.title('Прогноз цен на газ на следующие 24 часа')
     plt.xlabel('Дата')
     plt.ylabel('Цена на газ')
     plt.legend()
@@ -166,7 +128,7 @@ def main():
     
     # Выводим прогнозируемые цены
     print("Прогнозируемые цены на газ на следующие 24 часа:")
-    print(forecast_df)
+
     
 
 if __name__ == "__main__":
