@@ -1,137 +1,108 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
 import logging
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
 import matplotlib.pyplot as plt
-from collections import deque
 
 def fetch_gas_prices():
     gas_prices = yf.download("NG=F", period="1mo", interval="1h")[['Close', 'Volume']]
     gas_prices.rename(columns={'Close': 'Gas_Price', 'Volume': 'Trade_Volume'}, inplace=True)
-    gas_prices.columns = ['Gas_Price', 'Trade_Volume']
     if gas_prices.empty:
         logging.error("No gas price data fetched.")
     return gas_prices
 
-def add_lag_features(data, columns, lags):
-    for col in columns:
-        for lag in lags:
-            data[f"{col}_lag{lag}"] = data[col].shift(lag)
-    return data
-
-def preprocess_data(gas_prices):
-    data = gas_prices.copy()
+def preprocess_data(data):
     data.fillna(method='ffill', inplace=True)
     data.dropna(inplace=True)
-    lag_columns = ['Gas_Price']
-    data = add_lag_features(data, lag_columns, lags=[1, 3, 6])
-    data['hour'] = data.index.hour
-    data['day_of_week'] = data.index.dayofweek
-    data.dropna(inplace=True)
     return data
 
+def create_sequences(data, seq_length, target_col):
+    sequences = []
+    targets = []
+    for i in range(len(data) - seq_length):
+        seq = data[i:i+seq_length, :]
+        target = data[i+seq_length, target_col]
+        sequences.append(seq)
+        targets.append(target)
+    return np.array(sequences), np.array(targets)
+
 def main():
-    # Получаем данные о ценах на газ
+    # Fetch data
     gas_prices = fetch_gas_prices()
-    
-    # Предобрабатываем данные
-    data = preprocess_data(gas_prices)
-    print("Размер предобработанных данных:", data.shape)
-    
-    # Определяем признаки и целевую переменную
-    features = [col for col in data.columns if col != 'Gas_Price']
-    target = 'Gas_Price'
-    
-    # Разделяем данные на обучающую и тестовую выборки
-    train_size = int(len(data) * 0.8)
-    train_data = data.iloc[:train_size]
-    test_data = data.iloc[train_size:]
-    
-    print("Размер обучающей выборки:", train_data.shape)
-    print("Размер тестовой выборки:", test_data.shape)
-    
-    # Проверяем, есть ли данные для обучения
-    if len(train_data) == 0:
-        logging.error("Нет данных для обучения.")
+    if gas_prices.empty:
         return
+
+    # Preprocess data
+    gas_prices = preprocess_data(gas_prices)
     
-    # Масштабируем данные
-    scaler = StandardScaler()
-    train_scaled = scaler.fit_transform(train_data[features])
-    test_scaled = scaler.transform(test_data[features])
+    # Define features and target
+    features = ['Gas_Price', 'Trade_Volume']
+    target_col = 0  # Gas_Price column index
     
-    # Определяем целевые переменные для обучения и тестирования
-    y_train = train_data[target]
-    y_test = test_data[target]
+    # Normalize data
+    scaler = MinMaxScaler()
+    scaled_data = scaler.fit_transform(gas_prices[features])
     
-    # Создаем и обучаем модель случайного леса
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(train_scaled, y_train)
+    # Split data
+    seq_length = 24
+    train_size = int(len(scaled_data) * 0.8)
+    train_data = scaled_data[:train_size]
+    test_data = scaled_data[train_size:]
     
-    # Делаем предсказания на тестовых данных и вычисляем среднеквадратичную ошибку
-    predictions = model.predict(test_scaled)
-    mse = mean_squared_error(y_test, predictions)
-    print("Предсказания на тестовых данных:", predictions)
-    print("Среднеквадратичная ошибка на тестовых данных:", mse)
-    logging.info(f"Среднеквадратичная ошибка на тестовых данных: {mse}")
+    X_train, y_train = create_sequences(train_data, seq_length, target_col)
+    X_test, y_test = create_sequences(test_data, seq_length, target_col)
     
-    # Инициализируем исторические данные для лаговых признаков
-    gas_history = deque(test_data['Gas_Price'].tail(6).tolist(), maxlen=6)
+    # Reshape for LSTM
+    X_train = X_train.reshape(X_train.shape[0], seq_length, len(features))
+    X_test = X_test.reshape(X_test.shape[0], seq_length, len(features))
     
-    # Прогнозируем на следующие 24 часа
+    # Build LSTM model
+    model = Sequential([
+        LSTM(50, return_sequences=True, input_shape=(seq_length, len(features))),
+        LSTM(50),
+        Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mse')
+    model.fit(X_train, y_train, epochs=20, batch_size=32, verbose=1)
+    
+    # Predict
+    predictions = model.predict(X_test)
+    predictions_rescaled = scaler.inverse_transform(
+        np.hstack((predictions, np.zeros((predictions.shape[0], len(features) - 1))))
+    )[:, 0]
+    y_test_rescaled = scaler.inverse_transform(
+        np.hstack((y_test.reshape(-1, 1), np.zeros((y_test.shape[0], len(features) - 1))))
+    )[:, 0]
+    
+    mse = mean_squared_error(y_test_rescaled, predictions_rescaled)
+    print(f"Mean Squared Error: {mse}")
+    
+    # Forecast for next 24 hours
     forecast = []
-    last_data_point = test_data.iloc[-1].copy()
+    last_seq = test_data[-seq_length:].reshape(1, seq_length, len(features))
+    for _ in range(24):
+        pred = model.predict(last_seq)
+        forecast.append(pred[0, 0])
+        new_seq = np.hstack((pred, last_seq[0, -1, 1:].reshape(1, -1)))
+        last_seq = np.vstack((last_seq[0, 1:], new_seq)).reshape(1, seq_length, len(features))
     
-    for _ in range(24): 
-        # Обновляем лаговые признаки для Gas_Price
-        last_data_point['Gas_Price_lag1'] = gas_history[-1] if len(gas_history) >= 1 else np.nan
-        last_data_point['Gas_Price_lag3'] = gas_history[-3] if len(gas_history) >= 3 else np.nan
-        last_data_point['Gas_Price_lag6'] = gas_history[-6] if len(gas_history) >= 6 else np.nan
-        
-        # Обновляем временные признаки
-        last_time = last_data_point.name
-        next_time = last_time + pd.Timedelta(hours=1)
-        last_data_point['hour'] = next_time.hour
-        last_data_point['day_of_week'] = next_time.dayofweek
-        last_data_point.name = next_time
-        
-        # Прогнозируем цену на газ на следующий час
-        X_forecast = scaler.transform(last_data_point[features].values.reshape(1, -1))
-        pred = model.predict(X_forecast)
-        forecast.append(pred[0])
-        
-        # Обновляем исторические данные
-        gas_history.append(pred[0])
-        
-        # Обновляем Gas_Price для следующей итерации
-        last_data_point['Gas_Price'] = pred[0]
+    forecast_rescaled = scaler.inverse_transform(
+        np.hstack((np.array(forecast).reshape(-1, 1), np.zeros((24, len(features) - 1))))
+    )[:, 0]
     
-    # Создаем DataFrame для прогнозируемых цен
-    forecast_index = pd.date_range(start=last_time + pd.Timedelta(hours=1), periods=24, freq='H')  
-    forecast_df = pd.DataFrame(forecast, index=forecast_index, columns=['Predicted_Gas_Price'])
+    # Plot
+    forecast_index = pd.date_range(start=gas_prices.index[-1], periods=24, freq='H')
+    forecast_df = pd.DataFrame(forecast_rescaled, index=forecast_index, columns=['Predicted_Gas_Price'])
     
-    # Фильтруем данные для графика за последнюю неделю
-    last_week_data = data[data.index >= data.index[-1] - pd.Timedelta(days=7)]
-    
-    # Строим график исторических и прогнозируемых цен на газ
     plt.figure(figsize=(12, 6))
-    plt.plot(last_week_data['Gas_Price'], label='Исторические цены на газ (последняя неделя)')
-    plt.plot(forecast_df['Predicted_Gas_Price'], label='Прогнозируемые цены на газ', linestyle='--')
-    plt.title('Прогноз цен на газ на следующие 24 часа')
-    plt.xlabel('Дата')
-    plt.ylabel('Цена на газ')
+    plt.plot(gas_prices.index[-168:], gas_prices['Gas_Price'][-168:], label='Actual Prices')
+    plt.plot(forecast_df.index, forecast_df['Predicted_Gas_Price'], label='Forecast', linestyle='--')
     plt.legend()
     plt.show()
     
-    # Выводим прогнозируемые цены
-    print("Прогнозируемые цены на газ на следующие 24 часа:")
-
-    
-
 if __name__ == "__main__":
-    # Настраиваем логирование
-    logging.basicConfig(level=logging.INFO)
     main()
