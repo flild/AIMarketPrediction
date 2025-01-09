@@ -1,5 +1,5 @@
 # Gas Price Prediction Using LSTM
-## Description
+### Description
 This project predicts natural gas futures prices using an LSTM (Long Short-Term Memory) neural network. The model is trained on historical gas price data and volume data fetched from Yahoo Finance. It then forecasts future gas prices for the next 24 hours and visualizes the predictions alongside actual prices.
 ### Example:
 ![image](https://github.com/user-attachments/assets/f3d5d168-e226-43ff-b0f5-1e17bf9b31a9)
@@ -37,7 +37,7 @@ Clone the repository:
 1. Clone the repository:
 ```bash
 
-git clone https://github.com/yourusername/gas-price-prediction.git
+git clone https://github.com/flild/AIMarketPrediction.git
 
 pip install -r requirements.txt
 
