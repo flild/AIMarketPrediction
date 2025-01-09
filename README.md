@@ -1,108 +1,92 @@
-Gas Price Prediction Using LSTM
-Description
+# Gas Price Prediction Using LSTM
+## Description
 This project predicts natural gas futures prices using an LSTM (Long Short-Term Memory) neural network. The model is trained on historical gas price data and volume data fetched from Yahoo Finance. It then forecasts future gas prices for the next 24 hours and visualizes the predictions alongside actual prices.
 
-Table of Contents
-Features
+### Table of Contents
 
-Requirements
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Data](#data)
+- [Model](#model)
+- [Results](#results)
+- [Contributing](#contributing)
 
-Installation
 
-Usage
+### Features
+- Fetches real-time gas price data.
+- Preprocesses data to handle missing values.
+- Builds and trains an LSTM model for time series prediction.
+- Generates a 24-hour forecast of gas prices.
+- Visualizes model predictions and forecasts.
 
-Data
+### Requirements
+- Python 3.7 or higher
+- yfinance
+- numpy
+- pandas
+- scikit-learn
+- matplotlib
+- tensorflow
 
-Model
-
-Results
-
-Contributing
-
-License
-
-Contact
-
-Features
-Fetches real-time gas price data.
-
-Preprocesses data to handle missing values.
-
-Builds and trains an LSTM model for time series prediction.
-
-Generates a 24-hour forecast of gas prices.
-
-Visualizes model predictions and forecasts.
-
-Requirements
-Python 3.7 or higher
-
-yfinance
-
-numpy
-
-pandas
-
-scikit-learn
-
-matplotlib
-
-tensorflow
-
-Installation
+### Installation
 Clone the repository:
+1. Clone the repository:
+```bash
 
-bash
-Copy
 git clone https://github.com/yourusername/gas-price-prediction.git
-Install the required libraries:
 
-bash
-Copy
 pip install -r requirements.txt
+
+```
+2. Install the required libraries:
+```bash
+pip install -r requirements.txt
+```
 (Note: Create a requirements.txt file with the listed libraries if not provided.)
 
-Usage
-Run the script:
-
-bash
-Copy
+### Usage
+1. Run the script:
+```bash
 python main.py
-The script will fetch data, train the model, make predictions, and display a plot of the results.
+```
+2.The script will fetch data, train the model, make predictions, and display a plot of the results.
 
-Data
-Source: Yahoo Finance for natural gas futures (NG=F).
 
-Attributes:
+### Data
+- **Source**: Yahoo Finance for natural gas futures (`NG=F`).
 
-Gas_Price: Closing price of natural gas futures.
+- **Attributes**:
 
-Trade_Volume: Volume of trades.
+  - `Gas_Price`: Closing price of natural gas futures.
 
-Model
-Architecture: Sequential LSTM model with two LSTM layers and dropout regularization.
+  - `Trade_Volume`: Volume of trades.
 
-Loss Function: Mean Squared Error (MSE).
+### Model
+- **Architecture**: Sequential LSTM model with two LSTM layers and dropout regularization.
 
-Optimizer: Adam optimizer.
+- **Loss Function**: Mean Squared Error (MSE).
 
-Training: Trained for 30 epochs with a batch size of 32.
+- **Optimizer**: Adam optimizer.
 
-Results
-The model predicts gas prices based on historical data.
+- **Training**: Trained for 30 epochs with a batch size of 32.
 
-A plot is generated showing:
+### Results
+- The model predicts gas prices based on historical data.
 
-Actual gas prices for the last 48 hours.
+- A plot is generated showing:
 
-True test prices for the most recent data.
+  - Actual gas prices for the last 48 hours.
 
-Predicted test prices.
+  - True test prices for the most recent data.
 
-Forecast for the next 24 hours.
+  - Predicted test prices.
 
-The Mean Squared Error (MSE) of the predictions is printed.
+  - Forecast for the next 24 hours.
 
-Contributing
+- The Mean Squared Error (MSE) of the predictions is printed.
+
+### Contributing
 Contributions are welcome! Please open an issue or submit a pull request.
 
