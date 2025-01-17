@@ -7,7 +7,8 @@ It forecasts future gas prices for the next **10 hours** and visualizes the pred
 Additionally, the app calculates daily trading profits based on recent operations.
 
 ### Example:
-![image](https://github.com/user-attachments/assets/f3d5d168-e226-43ff-b0f5-1e17bf9b31a9)
+
+![readme](https://github.com/user-attachments/assets/52efca61-7bdf-4b6c-8c04-cda6333c6738)
 
 ---
 
@@ -55,35 +56,35 @@ Additionally, the app calculates daily trading profits based on recent operation
 ### Installation
 
 1. **Clone the repository:**  
-bash
+```bash
 git clone https://github.com/flild/AIMarketPrediction.git
 cd AIMarketPrediction
-
+```
 
 2. **Install the required libraries:**  
-bash
+```bash
 pip install -r requirements.txt
-
+```
 
 3. **Create a `.env` file** in the project directory and enter your Tinkoff API token and account ID:  
-bash
+```bash
 TINKOF_API="your_token"
 TIN_ACC_ID="your_account_id"
-
+```
 
 4. **Find your account ID** using the script:  
-bash
+```bash
 python ScriptForAccountId.py
-
+```
 
 ---
 
 ### Usage
 
 1. **Run the application:**  
-bash
+```bash
 python app.py
-
+```
 
 2. **App Features:**  
    - **"Просчитать график"** – fetches data, trains the model, predicts prices, and displays the 30-day chart with predictions.  
