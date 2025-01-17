@@ -1,19 +1,13 @@
-import yfinance as yf
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+from t_bank_invest import *  
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import logging
 
-def fetch_gas_prices():
-    gas_prices = yf.download("NG=F", period="1mo", interval="1h")[['Close', 'Volume']]
-    gas_prices.rename(columns={'Close': 'Gas_Price', 'Volume': 'Trade_Volume'}, inplace=True)
-    if gas_prices.empty:
-        logging.error("No gas price data fetched.")
-    return gas_prices
 
 def preprocess_data(data):
     data.fillna(method='ffill', inplace=True)
