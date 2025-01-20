@@ -41,7 +41,7 @@ Additionally, the app calculates daily trading profits based on recent operation
 
 ### Requirements
 
-- Python 3.11 or higher  
+- Python 3.8 - 3.11 
 - tinkoff-investments  
 - numpy  
 - pandas  
