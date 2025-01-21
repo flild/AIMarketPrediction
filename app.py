@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 from tkinter import font as tkfont
 import numpy as np
 import threading
-from api_client import fetch_gas_prices, fetch_today_profit
+from api_client import fetch_gas_prices, fetch_today_gaz_profit
 from model import preprocess_data, build_lstm_model, create_sequences, forecast_future_prices
 from visualization import plot_results_with_forecast
 from sklearn.preprocessing import MinMaxScaler
@@ -41,8 +41,8 @@ class GasPricePredictorApp:
             "#4CAF50"
         )
         self.profit_button = self.create_button(
-            "Посчитать сделки", 
-            self.calculate_profit,
+            "Посчитать сделки по газу", 
+            self.calculate_gaz_profit,
             "#2196F3"
         )
 
@@ -170,9 +170,9 @@ class GasPricePredictorApp:
         finally:
             self.reset_ui()
 
-    def calculate_profit(self):
+    def calculate_gaz_profit(self):
         try:
-            profit = fetch_today_profit()
+            profit = fetch_today_gaz_profit()
             self.result_label.config(text=f"Прибыль за сегодня: {profit:.2f} ₽")
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось получить прибыль: {str(e)}")

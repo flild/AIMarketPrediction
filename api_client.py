@@ -38,13 +38,13 @@ def fetch_gas_prices():
         logging.error(f"Error fetching gas prices: {e}")
         return pd.DataFrame()
 
-def fetch_today_profit():
+def fetch_today_gaz_profit():
     try:
         today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
         with Client(TOKEN) as client:
             operations = client.operations.get_operations(
                 account_id=tin_acc_id,
-                #figi=GAS_FIGI,
+                figi=GAS_FIGI,
                 from_=today_start,
                 to=now(),
                 state=OperationState.OPERATION_STATE_EXECUTED
