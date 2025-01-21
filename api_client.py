@@ -44,7 +44,7 @@ def fetch_today_gaz_profit():
         with Client(TOKEN) as client:
             operations = client.operations.get_operations(
                 account_id=tin_acc_id,
-                #figi=GAS_FIGI,
+                figi=GAS_FIGI,
                 from_=today_start,
                 to=now(),
                 state=OperationState.OPERATION_STATE_EXECUTED
