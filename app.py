@@ -177,6 +177,7 @@ class GasPricePredictorApp:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось получить прибыль: {str(e)}")
 
+    
     def on_close(self):
         if self.running:
             messagebox.showinfo("Информация", "Пожалуйста, дождитесь завершения операции")
