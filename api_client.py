@@ -40,11 +40,12 @@ def fetch_gas_prices():
 
 def fetch_today_profit():
     try:
+        today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
         with Client(TOKEN) as client:
             operations = client.operations.get_operations(
                 account_id=tin_acc_id,
-                figi=GAS_FIGI,
-                from_=now() - timedelta(days=1),
+                #figi=GAS_FIGI,
+                from_=today_start,
                 to=now(),
                 state=OperationState.OPERATION_STATE_EXECUTED
             )
