@@ -1,6 +1,7 @@
 from tinkoff.invest import Client, CandleInterval, OperationState
 from tinkoff.invest.utils import now
 from datetime import timedelta
+from datetime import datetime
 import pandas as pd
 import os
 from dotenv import load_dotenv
@@ -38,19 +39,18 @@ def fetch_gas_prices():
         logging.error(f"Error fetching gas prices: {e}")
         return pd.DataFrame()
 
-def fetch_today_gaz_profit():
+def fetch_gaz_profit(from_date, to_date):
     try:
-        today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
         with Client(TOKEN) as client:
+            # Преобразуем datetime в корректный формат для API
             operations = client.operations.get_operations(
                 account_id=tin_acc_id,
                 figi=GAS_FIGI,
-                from_=today_start,
-                to=now(),
+                from_=from_date,
+                to=to_date,
                 state=OperationState.OPERATION_STATE_EXECUTED
             )
             
-            # Преобразуем MoneyValue в рубли и суммируем
             profit = sum(op.payment.units + op.payment.nano / 1e9 for op in operations.operations)
             return profit
     except Exception as e:
