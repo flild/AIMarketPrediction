@@ -99,7 +99,7 @@ class GasPricePredictorApp:
         main_frame.pack(pady=10, padx=20, fill='both', expand=True)
 
 
-        # Кнопки
+        # buttons
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(pady=20, fill='x')
 
@@ -109,6 +109,7 @@ class GasPricePredictorApp:
             command=self.start_calculate_chart,
             style='primary.TButton'
         )
+        
         self.chart_button.pack(side='left', padx=10, fill='x', expand=True)
 
         self.profit_button = ttk.Button(
